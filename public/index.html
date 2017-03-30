@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Socket.io Demo</title>
+        <meta charset="utf-8">
+        <link rel="stylesheet" href="styles.css">
+    </head>
+    <body>
+        <h1>Socket.io + Canvas Demo</h1>
+        <canvas id="myCanvas" width="600" height="600" style="border:1px solid #d3d3d3;"></canvas>
+
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+            var x = 0;
+            var y = 0;
+            var dy = 5;
+            var dx = 5;
+            var WIDTH = 600;
+            var HEIGHT = 600;
+            var c = document.getElementById("myCanvas");
+            var ctx = c.getContext("2d");
+            
+			  	//store the x, y pos of all players
+			  	var players = {};
+			  
+            var socket = io.connect();
+			  
+			  	//update the position of all players
+			  	socket.on('allPlayers', function(newPlayers){
+					players = newPlayers;
+				});
+			  
+			  	//update the position of just one player
+			  	socket.on('playerUpdate', function(id,pos){
+					players[id] = pos;
+				});
+        
+			  	//draw loop
+            function draw() {
+                ctx.clearRect(0, 0, WIDTH, HEIGHT);
+					 //draw each player as a rectangle
+					 for(player in players){
+						 ctx.beginPath();
+						 //draw this client as red, all others as blue
+						 if(player === socket.id){
+							 ctx.strokeStyle = "red";
+						 }
+						 else{
+							 ctx.strokeStyle = "blue";
+						 }
+						 ctx.rect(players[player].x, players[player].y, 50, 50);
+						 ctx.stroke();
+						 ctx.closePath();
+					 }
+            }
+            
+			  	//handle key presses for movement
+            function keyPress(e){
+                switch (e.keyCode) {
+                    case 38:  // Up arrow 
+                        if (y - dy > 0){
+                            y -= dy;
+                            socket.emit('moved', {x : x, y: y});
+                        }
+                        break;
+                    case 40:  // Down arrow
+                        if (y + dy < HEIGHT){
+                            y += dy;
+                            socket.emit('moved', {x : x, y: y});
+                        }
+                        break;
+                    case 37:  // Left arrow
+                        if (x - dx > 0){
+                            x -= dx;
+                            socket.emit('moved', {x : x, y: y});
+                        }
+                        break;
+                    case 39:  // Right arrow
+                        if (x + dx < WIDTH){
+                            x += dx;
+                            socket.emit('moved', {x : x, y: y});
+                        }
+                        break;
+                }
+                e.preventDefault();
+            }
+            
+			  	window.addEventListener('keydown', keyPress,true);
+			  
+			   //redraw the screen every 10 milliseconds
+            setInterval(draw, 10); 
+        </script>
+    </body>
+</html>
